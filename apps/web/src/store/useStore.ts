@@ -100,14 +100,16 @@ export const useStore = create<AppStore>((set, get) => {
 
   // ── WebSocket wiring (done once) ────────────────────────────────────────────
 
-  ws.on<{ type: string; message: Record<string, unknown> }>('message:new', ({ message }) => {
+  // [M2 fix] Use IndexedDB only — never localStorage for crypto keys
+  ws.on<{ type: string; message: Record<string, unknown> }>('message:new', async ({ message }) => {
     const msg = normMsg(message)
-    const key = localStorage.getItem(`vira:chkey:${msg.channelId}`)
-    if (msg.isEncrypted && msg.encryptedContent && key) {
+    if (msg.isEncrypted && msg.encryptedContent) {
       try {
-        const ck = Uint8Array.from(atob(key), c => c.charCodeAt(0))
-        msg.decryptedContent = decryptMessage(msg.encryptedContent, ck)
-      } catch { /* decryption failed, show placeholder */ }
+        const channelKey = await keyStore.getChannelKey(msg.channelId)
+        if (channelKey) {
+          msg.decryptedContent = decryptMessage(msg.encryptedContent, channelKey)
+        }
+      } catch { /* decryption failed — key not available yet */ }
     }
     set(s => ({ messages: [...s.messages, msg] }))
   })
@@ -218,11 +220,9 @@ export const useStore = create<AppStore>((set, get) => {
       }
     } catch { /* best effort */ }
 
-    // Generate new key and persist
+    // Generate new key and persist in IndexedDB only
     const key = generateChannelKey()
     await keyStore.saveChannelKey(channelId, key)
-    // Also stash in localStorage for the ws message:new handler (which can't use async)
-    localStorage.setItem(`vira:chkey:${channelId}`, btoa(String.fromCharCode(...key)))
     return key
   }
 

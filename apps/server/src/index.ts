@@ -1,6 +1,7 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
+import rateLimit from '@fastify/rate-limit'
 import websocket from '@fastify/websocket'
 import { authRoutes }    from './routes/auth.js'
 import { serverRoutes }  from './routes/servers.js'
@@ -11,10 +12,19 @@ import { setupWebSocket } from './ws/gateway.js'
 import { verifyConnection } from './db/neo4j.js'
 import driver from './db/neo4j.js'
 
+// [H1 fix] Require a real JWT secret — fail fast rather than use a predictable fallback
+const jwtSecret = process.env.JWT_SECRET
+if (!jwtSecret || jwtSecret.length < 32) {
+  console.error('FATAL: JWT_SECRET must be set in .env and be at least 32 characters')
+  process.exit(1)
+}
+
 const app = Fastify({
   logger: {
     transport: { target: 'pino-pretty', options: { colorize: true } },
   },
+  // [H4 fix] Reject payloads > 64 KB at the HTTP level
+  bodyLimit: 65_536,
 })
 
 await app.register(cors, {
@@ -22,8 +32,13 @@ await app.register(cors, {
   credentials: true,
 })
 
-await app.register(jwt, {
-  secret: process.env.JWT_SECRET ?? 'dev-secret-change-in-prod',
+await app.register(jwt, { secret: jwtSecret })
+
+// [H3 fix] Global rate limit — auth endpoints get a tighter limit via route config
+await app.register(rateLimit, {
+  global: true,
+  max: 120,
+  timeWindow: '1 minute',
 })
 
 await app.register(websocket)

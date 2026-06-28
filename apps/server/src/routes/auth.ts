@@ -25,13 +25,23 @@ interface RegisterBody { username: string; email: string; password: string }
 interface LoginBody    { username: string; password: string }
 
 export async function authRoutes(app: FastifyInstance) {
-  app.post<{ Body: RegisterBody }>('/register', async (req, reply) => {
+  // [H3] Strict rate limit on register — 5 attempts per 15 min per IP
+  app.post<{ Body: RegisterBody }>('/register', {
+    config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
+  }, async (req, reply) => {
     const { username, email, password } = req.body
     if (!username?.trim() || !email?.trim() || !password) {
       return reply.code(400).send({ error: 'username, email, and password are required' })
     }
-    if (password.length < 6) {
-      return reply.code(400).send({ error: 'Password must be at least 6 characters' })
+    // [M1] Enforce username length and characters
+    if (username.trim().length > 32) {
+      return reply.code(400).send({ error: 'Username must be 32 characters or fewer' })
+    }
+    if (!/^[a-zA-Z0-9_.-]+$/.test(username.trim())) {
+      return reply.code(400).send({ error: 'Username may only contain letters, numbers, _ . and -' })
+    }
+    if (password.length < 8) {
+      return reply.code(400).send({ error: 'Password must be at least 8 characters' })
     }
 
     const existing = await q(
@@ -65,7 +75,10 @@ export async function authRoutes(app: FastifyInstance) {
     })
   })
 
-  app.post<{ Body: LoginBody }>('/login', async (req, reply) => {
+  // [H3] Strict rate limit on login — 10 attempts per 15 min per IP
+  app.post<{ Body: LoginBody }>('/login', {
+    config: { rateLimit: { max: 10, timeWindow: '15 minutes' } },
+  }, async (req, reply) => {
     const { username, password } = req.body
     if (!username || !password) {
       return reply.code(400).send({ error: 'username and password are required' })

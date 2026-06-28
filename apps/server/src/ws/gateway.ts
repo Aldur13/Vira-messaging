@@ -69,6 +69,11 @@ export async function setupWebSocket(app: FastifyInstance) {
     send(socket, { type: 'ready', userId: uid, username: uname })
 
     socket.on('message', async (raw: Buffer) => {
+      // [H4] Reject oversized WS frames (64 KB max)
+      if (raw.length > 65_536) {
+        send(socket, { type: 'error', message: 'Message too large' })
+        return
+      }
       let event: WsEvent
       try { event = JSON.parse(raw.toString()) as WsEvent }
       catch { return }
@@ -106,24 +111,27 @@ export async function setupWebSocket(app: FastifyInstance) {
             break
           }
 
+          // [C1 fix] Never store plaintext when an encrypted version is provided
+          const storedContent = encryptedContent ? '' : content.trim()
           const mid = uuid()
           await qw(
             `MATCH (u:User {id: $uid}), (c:Channel {id: $cid})
              CREATE (m:Message {
-               id: $mid, content: $content,
+               id: $mid, content: $storedContent,
                encryptedContent: $enc, isEncrypted: $isEnc,
                channelId: $cid, createdAt: datetime()
              })
              CREATE (u)-[:SENT]->(m)
              CREATE (m)-[:IN_CHANNEL]->(c)`,
-            { uid, cid: channelId, mid, content: content.trim(), enc: encryptedContent ?? null, isEnc: !!encryptedContent },
+            { uid, cid: channelId, mid, storedContent, enc: encryptedContent ?? null, isEnc: !!encryptedContent },
           )
 
           const payload = {
             type: 'message:new',
             message: {
               id: mid, channelId,
-              content: content.trim(),
+              // [M4 fix] Only return plaintext when message is NOT encrypted
+              content: encryptedContent ? '' : content.trim(),
               encryptedContent: encryptedContent ?? null,
               isEncrypted: !!encryptedContent,
               createdAt: new Date().toISOString(),
