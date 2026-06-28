@@ -1,15 +1,29 @@
 import { Plus, Compass } from 'lucide-react'
 import clsx from 'clsx'
+import { ViraLogo } from '../ui/ViraLogo'
 import { Tooltip } from '../ui/Tooltip'
 import { useStore } from '../../store/useStore'
 
 export default function ServerList() {
-  const servers          = useStore(s => s.servers)
-  const selectedId       = useStore(s => s.selectedServerId)
-  const selectServer     = useStore(s => s.selectServer)
+  const servers      = useStore(s => s.servers)
+  const selectedId   = useStore(s => s.selectedServerId)
+  const selectServer = useStore(s => s.selectServer)
 
   return (
-    <nav className="w-16 flex-shrink-0 flex flex-col items-center gap-1.5 py-3 bg-deep border-r border-white/5 overflow-y-auto">
+    <nav className="w-[68px] flex-shrink-0 flex flex-col items-center gap-2 py-3 bg-deep border-r border-white/5 overflow-y-auto">
+
+      {/* Vira brand mark at top */}
+      <div className="mb-1 flex-shrink-0">
+        <Tooltip label="Vira" side="right">
+          <div className="w-11 h-11 flex items-center justify-center">
+            <ViraLogo size={36} />
+          </div>
+        </Tooltip>
+      </div>
+
+      <div className="w-8 h-px bg-white/8 flex-shrink-0" />
+
+      {/* Server icons — hexagonal */}
       {servers.map(srv => {
         const active = srv.id === selectedId
         return (
@@ -18,40 +32,40 @@ export default function ServerList() {
               onClick={() => selectServer(srv.id)}
               className={clsx(
                 'relative w-11 h-11 flex items-center justify-center flex-shrink-0',
-                'text-[13px] font-800 text-white transition-all duration-200 cursor-pointer select-none',
-                active
-                  ? 'rounded-2xl shadow-lg'
-                  : 'rounded-full bg-high text-soft hover:rounded-2xl hover:text-bright',
+                'text-[13px] font-700 text-white transition-all duration-200 cursor-pointer select-none',
+                'hex-clip',
+                active ? 'scale-105' : 'opacity-70 hover:opacity-100 hover:scale-105',
               )}
-              style={active && srv.color ? { background: srv.color, borderRadius: '14px' } :
-                     active ? { background: '#7c6ef5', borderRadius: '14px', boxShadow: '0 0 18px rgba(124,110,245,0.4)' } :
-                     srv.color ? { background: srv.color } : undefined}
+              style={{
+                background: active
+                  ? 'linear-gradient(135deg,#7c6ef5,#5eead4)'
+                  : (srv.color ?? 'linear-gradient(135deg,#1a2030,#202638)'),
+                boxShadow: active ? '0 0 22px rgba(124,110,245,0.45)' : undefined,
+              }}
             >
-              <span className={clsx(!active && srv.color ? 'text-white' : undefined)}>
-                {srv.initials}
-              </span>
-              <span
-                className={clsx(
-                  'absolute left-0 -translate-x-full rounded-r-full bg-bright transition-all duration-200',
-                  active ? 'h-8 w-1' : 'h-4 w-1 opacity-0 group-hover:opacity-100',
-                )}
-              />
+              {srv.initials}
+              {/* Active pulse ring */}
+              {active && (
+                <span className="absolute inset-0 hex-clip animate-pulse"
+                      style={{ background: 'linear-gradient(135deg,rgba(124,110,245,0.2),rgba(94,234,212,0.2))' }} />
+              )}
             </button>
           </Tooltip>
         )
       })}
 
-      <div className="w-8 h-px bg-white/8 my-1 flex-shrink-0" />
+      <div className="w-8 h-px bg-white/8 my-0.5 flex-shrink-0" />
 
       <Tooltip label="Add a Server" side="right">
-        <button className="w-11 h-11 rounded-full flex items-center justify-center text-online border border-dashed border-online/30 bg-online/5 hover:rounded-2xl hover:bg-online hover:text-deep hover:border-transparent transition-all duration-200 flex-shrink-0 cursor-pointer">
+        <button className="w-11 h-11 hex-clip flex items-center justify-center text-teal bg-high hover:bg-teal hover:text-deep transition-all duration-200 flex-shrink-0 cursor-pointer"
+                style={{ transitionProperty: 'background,color,box-shadow' }}>
           <Plus size={18} strokeWidth={2.5} />
         </button>
       </Tooltip>
 
-      <div className="mt-auto flex-shrink-0">
+      <div className="mt-auto flex-shrink-0 pb-1">
         <Tooltip label="Explore Servers" side="right">
-          <button className="w-11 h-11 rounded-full flex items-center justify-center text-ghost bg-high hover:rounded-2xl hover:text-soft hover:bg-lift transition-all duration-200 cursor-pointer">
+          <button className="w-11 h-11 hex-clip flex items-center justify-center text-ghost bg-high hover:text-soft hover:bg-lift transition-all duration-200 cursor-pointer">
             <Compass size={18} strokeWidth={1.8} />
           </button>
         </Tooltip>

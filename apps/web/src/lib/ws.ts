@@ -1,3 +1,5 @@
+const WS_BASE = (import.meta.env.VITE_WS_URL as string | undefined) ?? 'ws://localhost:3001'
+
 type Handler<T = unknown> = (data: T) => void
 
 class ViraWsClient {
@@ -7,7 +9,7 @@ class ViraWsClient {
   private reconnectDelay = 1000
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private activeChannelId: string | null = null
-  private pending: object[] = []   // queued until socket is OPEN
+  private pending: object[] = []
 
   connect(token: string) {
     this.token = token
@@ -16,13 +18,12 @@ class ViraWsClient {
 
   private _open() {
     if (this.socket?.readyState === WebSocket.OPEN) return
-    const url = `ws://localhost:3001/ws?token=${encodeURIComponent(this.token)}`
+    const url = `${WS_BASE}/ws?token=${encodeURIComponent(this.token)}`
     this.socket = new WebSocket(url)
 
     this.socket.onopen = () => {
       this.reconnectDelay = 1000
       this._emit('ws:status', 'connected')
-      // Re-join active channel first, then flush queued messages in order
       if (this.activeChannelId) this._sendNow({ type: 'join', channelId: this.activeChannelId })
       const q = this.pending.splice(0)
       q.forEach(msg => this._sendNow(msg))
@@ -32,7 +33,7 @@ class ViraWsClient {
       try {
         const data = JSON.parse(e.data as string) as { type: string }
         this._emit(data.type, data)
-      } catch { /* ignore malformed frames */ }
+      } catch { /* ignore malformed */ }
     }
 
     this.socket.onclose = () => {
@@ -63,7 +64,7 @@ class ViraWsClient {
 
   join(channelId: string) {
     this.activeChannelId = channelId
-    this._send({ type: 'join', channelId })   // queued if not yet open
+    this._send({ type: 'join', channelId })
   }
 
   sendMessage(channelId: string, content: string, encryptedContent?: string) {
@@ -78,22 +79,11 @@ class ViraWsClient {
     this._send({ type: 'react', messageId, emoji })
   }
 
-  // WebRTC screen share signaling
-  screenShareOffer(to: string, sdp: string) {
-    this._send({ type: 'screenshare:offer', to, sdp })
-  }
-  screenShareAnswer(to: string, sdp: string) {
-    this._send({ type: 'screenshare:answer', to, sdp })
-  }
-  iceCandidate(to: string, candidate: RTCIceCandidateInit) {
-    this._send({ type: 'screenshare:ice', to, candidate })
-  }
-  screenShareStart(channelId: string) {
-    this._send({ type: 'screenshare:start', channelId })
-  }
-  screenShareStop(channelId: string) {
-    this._send({ type: 'screenshare:stop', channelId })
-  }
+  screenShareOffer(to: string, sdp: string)  { this._send({ type: 'screenshare:offer',  to, sdp }) }
+  screenShareAnswer(to: string, sdp: string) { this._send({ type: 'screenshare:answer', to, sdp }) }
+  iceCandidate(to: string, candidate: RTCIceCandidateInit) { this._send({ type: 'screenshare:ice', to, candidate }) }
+  screenShareStart(channelId: string)        { this._send({ type: 'screenshare:start', channelId }) }
+  screenShareStop(channelId: string)         { this._send({ type: 'screenshare:stop',  channelId }) }
 
   private _sendNow(data: object) {
     if (this.socket?.readyState === WebSocket.OPEN) {
@@ -105,7 +95,7 @@ class ViraWsClient {
     if (this.socket?.readyState === WebSocket.OPEN) {
       this._sendNow(data)
     } else {
-      this.pending.push(data)   // queue until connection is ready
+      this.pending.push(data)
     }
   }
 

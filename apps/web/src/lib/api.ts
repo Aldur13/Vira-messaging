@@ -1,4 +1,4 @@
-const BASE = 'http://localhost:3001'
+const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001'
 
 async function req<T>(
   path: string,
@@ -46,10 +46,10 @@ export const api = {
       req('/auth/keys', { method: 'POST', token, body: JSON.stringify({ publicKey }) }),
   },
   servers: {
-    list:    (token: string) => req<Record<string, unknown>[]>('/servers', { token }),
-    channels:(token: string, sid: string) =>
+    list:     (token: string) => req<Record<string, unknown>[]>('/servers', { token }),
+    channels: (token: string, sid: string) =>
       req<Record<string, unknown>[]>(`/servers/${sid}/channels`, { token }),
-    members: (token: string, sid: string) =>
+    members:  (token: string, sid: string) =>
       req<Record<string, unknown>[]>(`/servers/${sid}/members`, { token }),
   },
   channels: {
