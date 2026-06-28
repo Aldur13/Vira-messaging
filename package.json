@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": ["apps/*"],
   "scripts": {
-    "dev": "npm run dev --workspace=apps/web",
-    "build": "npm run build --workspace=apps/web"
+    "dev":   "npm run dev   --workspace=apps/web",
+    "build": "npm run build --workspace=apps/web",
+    "start": "node node_modules/.bin/tsx apps/server/src/index.ts"
   }
 }

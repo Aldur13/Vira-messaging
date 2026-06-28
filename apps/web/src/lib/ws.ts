@@ -1,4 +1,11 @@
-const WS_BASE = (import.meta.env.VITE_WS_URL as string | undefined) ?? 'ws://localhost:3001'
+// Auto-detect WebSocket URL from the current page's host.
+// Works for both dev (proxied by Vite to localhost:3001) and
+// production (same-origin wss:// served by Fastify on Railway).
+function getWsBase(): string {
+  if (typeof window === 'undefined') return 'ws://localhost:3001'
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${proto}//${window.location.host}`
+}
 
 type Handler<T = unknown> = (data: T) => void
 
@@ -18,7 +25,7 @@ class ViraWsClient {
 
   private _open() {
     if (this.socket?.readyState === WebSocket.OPEN) return
-    const url = `${WS_BASE}/ws?token=${encodeURIComponent(this.token)}`
+    const url = `${getWsBase()}/ws?token=${encodeURIComponent(this.token)}`
     this.socket = new WebSocket(url)
 
     this.socket.onopen = () => {

@@ -1,0 +1,12 @@
+[build]
+builder = "nixpacks"
+# Build the frontend first so Fastify can serve it
+buildCommand = "npm install && npm run build"
+
+[deploy]
+# Fastify serves both the API and the compiled frontend from one process
+startCommand = "npm run start"
+restartPolicyType = "on-failure"
+restartPolicyMaxRetries = 3
+healthcheckPath = "/health"
+healthcheckTimeout = 30

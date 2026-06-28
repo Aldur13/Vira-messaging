@@ -1,4 +1,6 @@
-const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001'
+// Empty string = same origin (production: Fastify serves both API and frontend)
+// Dev: Vite proxy forwards /auth, /servers, etc. to localhost:3001 automatically
+const BASE = ''
 
 async function req<T>(
   path: string,
