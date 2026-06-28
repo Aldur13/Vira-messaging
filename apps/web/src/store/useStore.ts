@@ -137,7 +137,7 @@ export const useStore = create<AppStore>((set, get) => {
   )
 
   ws.on<{ ws_status: string }>('ws:status', (status) => {
-    set({ wsStatus: status as AppStore['wsStatus'] })
+    set({ wsStatus: status.ws_status as AppStore['wsStatus'] })
   })
 
   // WebRTC screen-share signaling
@@ -156,7 +156,7 @@ export const useStore = create<AppStore>((set, get) => {
 
   screenShare.setRemoteStreamHandler((userId, stream) => {
     if (stream) {
-      const url = URL.createObjectURL(stream)
+      const url = URL.createObjectURL(stream as unknown as MediaSource)
       set(s => ({ peerScreenStreams: { ...s.peerScreenStreams, [userId]: url } }))
     } else {
       set(s => {
