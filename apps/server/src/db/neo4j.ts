@@ -15,13 +15,14 @@ const driver = neo4j.driver(
 export default driver
 
 type Params = Record<string, unknown>
+type NeoRecord = { keys: readonly PropertyKey[]; get(key: string): unknown }
 
-function toObj(record: neo4j.Record) {
+function toObj(record: NeoRecord): Record<string, unknown> {
   const obj: Record<string, unknown> = {}
   for (const key of record.keys) {
-    const val = record.get(key)
-    obj[key] = val && typeof val === 'object' && 'properties' in val
-      ? val.properties
+    const val = record.get(String(key))
+    obj[String(key)] = val && typeof val === 'object' && 'properties' in (val as object)
+      ? (val as { properties: unknown }).properties
       : val
   }
   return obj
@@ -44,8 +45,8 @@ export async function run<T = Record<string, unknown>>(
   }
 }
 
-export const q  = (cypher: string, params?: Params) => run(cypher, params, false)
-export const qw = (cypher: string, params?: Params) => run(cypher, params, true)
+export const q  = <T = Record<string, unknown>>(cypher: string, params?: Params) => run<T>(cypher, params, false)
+export const qw = <T = Record<string, unknown>>(cypher: string, params?: Params) => run<T>(cypher, params, true)
 
 export async function verifyConnection() {
   const session = driver.session({ database: process.env.NEO4J_DATABASE })

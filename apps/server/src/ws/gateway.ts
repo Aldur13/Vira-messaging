@@ -68,7 +68,7 @@ export async function setupWebSocket(app: FastifyInstance) {
 
     send(socket, { type: 'ready', userId: uid, username: uname })
 
-    socket.on('message', async (raw) => {
+    socket.on('message', async (raw: Buffer) => {
       let event: WsEvent
       try { event = JSON.parse(raw.toString()) as WsEvent }
       catch { return }
