@@ -1,10 +1,11 @@
 [build]
 builder = "nixpacks"
-# Build the frontend first so Fastify can serve it
-buildCommand = "npm install && npm run build"
+# Nixpacks already runs `npm ci` in its install phase.
+# We only need to build the frontend here — DO NOT re-run npm install
+# (running it again with NODE_ENV=production skips devDeps and breaks Vite).
+buildCommand = "npm run build"
 
 [deploy]
-# Fastify serves both the API and the compiled frontend from one process
 startCommand = "npm run start"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
