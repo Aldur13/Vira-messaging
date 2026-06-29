@@ -68,6 +68,10 @@ interface AppStore {
 
   wsStatus: 'disconnected' | 'connecting' | 'connected'
 
+  // right panel
+  rightPanel: 'members' | 'search' | 'inbox' | 'threads' | null
+  togglePanel: (panel: 'members' | 'search' | 'inbox' | 'threads') => void
+
   // auth
   login:    (username: string, password: string) => Promise<void>
   register: (username: string, email: string, password: string) => Promise<void>
@@ -258,6 +262,9 @@ export const useStore = create<AppStore>((set, get) => {
     isMuted: false,
     isDeafened: false,
     peerScreenStreams: {},
+
+    rightPanel: null,
+    togglePanel: (panel: 'members' | 'search' | 'inbox' | 'threads') => set(s => ({ rightPanel: s.rightPanel === panel ? null : panel })),
 
     wsStatus: 'disconnected',
 
