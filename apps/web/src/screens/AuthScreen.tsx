@@ -5,11 +5,20 @@ import { useStore } from '../store/useStore'
 
 type Tab = 'login' | 'register'
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+
+function validateEmail(e: string): string {
+  if (!e.trim()) return 'Email is required'
+  if (!EMAIL_RE.test(e.trim())) return 'Enter a valid email address (e.g. you@example.com)'
+  return ''
+}
+
 export default function AuthScreen() {
   const [tab, setTab]       = useState<Tab>('login')
   const [username, setUsername] = useState('')
   const [email, setEmail]   = useState('')
   const [password, setPassword] = useState('')
+  const [emailError, setEmailError] = useState('')
 
   const login          = useStore(s => s.login)
   const register       = useStore(s => s.register)
@@ -17,14 +26,21 @@ export default function AuthScreen() {
   const isAuthLoading  = useStore(s => s.isAuthLoading)
   const clearAuthError = useStore(s => s.clearAuthError)
 
-  const switchTab = (t: Tab) => { setTab(t); clearAuthError() }
+  const switchTab = (t: Tab) => { setTab(t); clearAuthError(); setEmailError('') }
+
+  const handleEmailChange = (v: string) => {
+    setEmail(v)
+    if (emailError) setEmailError(validateEmail(v))  // clear error as user types
+  }
 
   const submit = async () => {
     if (!username.trim() || !password) return
     if (tab === 'login') {
       await login(username.trim(), password)
     } else {
-      if (!email.trim()) return
+      const err = validateEmail(email)
+      if (err) { setEmailError(err); return }
+      setEmailError('')
       await register(username.trim(), email.trim(), password)
     }
   }
@@ -88,15 +104,21 @@ export default function AuthScreen() {
               className="w-full bg-high border border-white/8 rounded-xl px-4 py-3 text-sm font-500 text-bright placeholder:text-ghost outline-none focus:border-accent/50 transition-colors caret-accent"
             />
             {tab === 'register' && (
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                onKeyDown={onKey}
-                autoComplete="email"
-                className="w-full bg-high border border-white/8 rounded-xl px-4 py-3 text-sm font-500 text-bright placeholder:text-ghost outline-none focus:border-accent/50 transition-colors caret-accent"
-              />
+              <div>
+                <input
+                  type="email"
+                  placeholder="Email (e.g. you@example.com)"
+                  value={email}
+                  onChange={e => handleEmailChange(e.target.value)}
+                  onBlur={() => setEmailError(validateEmail(email))}
+                  onKeyDown={onKey}
+                  autoComplete="email"
+                  className={`w-full bg-high rounded-xl px-4 py-3 text-sm font-500 text-bright placeholder:text-ghost outline-none transition-colors caret-accent ${emailError ? 'border border-danger/60 focus:border-danger' : 'border border-white/8 focus:border-accent/50'}`}
+                />
+                {emailError && (
+                  <p className="text-[11px] font-500 text-danger mt-1.5 px-1">{emailError}</p>
+                )}
+              </div>
             )}
             <input
               type="password"
