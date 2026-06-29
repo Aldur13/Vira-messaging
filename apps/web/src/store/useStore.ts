@@ -79,6 +79,11 @@ interface AppStore {
   selectServer:  (id: string) => Promise<void>
   selectChannel: (id: string) => Promise<void>
 
+  // space / room management
+  createSpace: (name: string, color?: string) => Promise<void>
+  createRoom:  (name: string, type: 'text' | 'voice') => Promise<void>
+  joinSpace:   (id: string) => Promise<void>
+
   // messages
   sendMessage: (content: string) => Promise<void>
 
@@ -314,6 +319,11 @@ export const useStore = create<AppStore>((set, get) => {
     // ── navigation ────────────────────────────────────────────────────────────
 
     async selectServer(id) {
+      // Empty string = go back to home dashboard
+      if (!id) {
+        set({ selectedServerId: null, selectedChannelId: null, channels: [], messages: [], members: [] })
+        return
+      }
       const { token } = get()
       if (!token) return
       set({ selectedServerId: id, isLoading: true, channels: [], messages: [], members: [] })
@@ -414,6 +424,38 @@ export const useStore = create<AppStore>((set, get) => {
 
       // Send via WebSocket — plain content stays as hint for non-encrypted fallback
       ws.sendMessage(selectedChannelId, content.trim(), encryptedContent)
+    },
+
+    // ── space / room management ───────────────────────────────────────────────
+
+    async createSpace(name, color) {
+      const { token } = get()
+      if (!token) throw new Error('Not authenticated')
+      const initials = name.slice(0, 2).toUpperCase()
+      await api.servers.create(token, { name, initials, color })
+      await loadServers(token)
+    },
+
+    async createRoom(name, type) {
+      const { token, selectedServerId } = get()
+      if (!token || !selectedServerId) throw new Error('No space selected')
+      await api.channels.create(token, selectedServerId, { name, type })
+      // Refresh channels
+      const rawChannels = await api.servers.channels(token, selectedServerId)
+      const channels = rawChannels.map(c => ({
+        id: c.id as string, serverId: selectedServerId,
+        name: c.name as string, type: c.type as Channel['type'],
+        description: c.description as string | undefined,
+      }))
+      set({ channels })
+    },
+
+    async joinSpace(id) {
+      const { token } = get()
+      if (!token) throw new Error('Not authenticated')
+      await api.servers.join(token, id)
+      await loadServers(token)
+      await get().selectServer(id)
     },
 
     // ── reactions ─────────────────────────────────────────────────────────────
