@@ -31,22 +31,22 @@ export default function TopNav() {
 
   return (
     <>
-      <header className="h-11 flex-shrink-0 flex items-center px-4 gap-3 border-b border-white/6" style={{ background: 'var(--color-abyss)' }}>
+      <header className="h-11 flex-shrink-0 flex items-center px-4 gap-3 border-b border-white/10 backdrop-blur-xl" style={{ background: 'rgba(255, 255, 255, 0.03)' }}>
         {/* Logo — clicking goes home */}
         <button onClick={() => selectServer('')} className="flex items-center gap-2 cursor-pointer group flex-shrink-0">
           <ViraLogo size={26} />
-          <span className="text-sm font-800 text-ink-100 group-hover:text-brand transition-colors">Vira</span>
+          <span className="text-sm font-800 text-white group-hover:text-blue-300 transition-colors">Vira</span>
         </button>
 
         {/* Breadcrumb when in space */}
         {server && (
-          <div className="flex items-center gap-1.5 text-xs font-500 text-ink-400">
-            <span className="text-ink-600">/</span>
-            <span className="text-ink-100 font-600">{server.name}</span>
+          <div className="flex items-center gap-1.5 text-xs font-500 text-white/60">
+            <span className="text-white/30">/</span>
+            <span className="text-white/90 font-600">{server.name}</span>
             {channel && (
               <>
-                <span className="text-ink-600">/</span>
-                <span className="text-brand font-600">#{channel.name}</span>
+                <span className="text-white/30">/</span>
+                <span className="text-blue-300 font-600">#{channel.name}</span>
               </>
             )}
           </div>
@@ -56,7 +56,7 @@ export default function TopNav() {
 
         {/* Panel status indicator */}
         {rightPanel && (
-          <span className="text-[10px] font-600 text-ink-400 capitalize hidden sm:block">
+          <span className="text-[10px] font-600 text-white/50 capitalize hidden sm:block">
             {rightPanel} open
           </span>
         )}
@@ -65,13 +65,13 @@ export default function TopNav() {
           <Tooltip label="Settings" side="bottom">
             <button
               onClick={() => setShowSettings(true)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-400 hover:text-ink-100 hover:bg-surface transition-colors cursor-pointer"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200 cursor-pointer"
             >
               <Settings size={14} strokeWidth={1.8} />
             </button>
           </Tooltip>
           <Tooltip label="Sign out" side="bottom">
-            <button onClick={logout} className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-400 hover:text-danger hover:bg-danger/10 transition-colors cursor-pointer">
+            <button onClick={logout} className="w-7 h-7 rounded-lg flex items-center justify-center text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 cursor-pointer">
               <LogOut size={14} strokeWidth={1.8} />
             </button>
           </Tooltip>

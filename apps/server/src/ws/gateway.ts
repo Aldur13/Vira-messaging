@@ -37,6 +37,8 @@ type WsEvent =
   | { type: 'join';             channelId: string }
   | { type: 'leave';            channelId: string }
   | { type: 'message';          channelId: string; content: string; encryptedContent?: string }
+  | { type: 'message:edit';     messageId: string; content: string; encryptedContent?: string }
+  | { type: 'message:delete';   messageId: string }
   | { type: 'typing';           channelId: string; isTyping: boolean }
   | { type: 'react';            messageId: string; emoji: string }
   | { type: 'voice:join';       channelId: string }
@@ -146,6 +148,64 @@ export async function setupWebSocket(app: FastifyInstance) {
         case 'typing':
           broadcast(event.channelId, { type: 'typing', channelId: event.channelId, userId: uid, username: uname, isTyping: event.isTyping }, uid)
           break
+
+        case 'message:edit': {
+          const { messageId, content, encryptedContent } = event
+          if (!content?.trim()) break
+
+          const canEdit = await q(
+            'MATCH (u:User {id: $uid})-[:SENT]->(m:Message {id: $mid}) RETURN m.id',
+            { uid, mid: messageId },
+          )
+          if (canEdit.length === 0) break
+
+          const storedContent = encryptedContent ? '' : content.trim()
+          await qw(
+            `MATCH (m:Message {id: $mid})
+             SET m.content = $storedContent, m.encryptedContent = $enc, m.isEncrypted = $isEnc, m.editedAt = datetime()`,
+            { mid: messageId, storedContent, enc: encryptedContent ?? null, isEnc: !!encryptedContent },
+          )
+
+          const chanRows = await q<{ cid: string }>(
+            'MATCH (m:Message {id: $mid})-[:IN_CHANNEL]->(c:Channel) RETURN c.id AS cid',
+            { mid: messageId },
+          )
+          if (chanRows.length > 0) {
+            const rp = { type: 'message:edited', messageId, content: storedContent, encryptedContent: encryptedContent ?? null, editedAt: new Date().toISOString() }
+            send(socket, rp)
+            broadcast(chanRows[0].cid, rp, uid)
+          }
+          break
+        }
+
+        case 'message:delete': {
+          const { messageId } = event
+
+          const canDelete = await q(
+            `MATCH (u:User {id: $uid})-[:SENT]->(m:Message {id: $mid})
+             RETURN m.id
+             UNION
+             MATCH (u2:User {id: $uid})-[mem:MEMBER_OF]->(s:Server)-[:HAS_CHANNEL]->(:Channel)<-[:IN_CHANNEL]-(m:Message {id: $mid})
+             WHERE mem.role IN ['owner','admin','mod']
+             RETURN m.id`,
+            { uid, mid: messageId },
+          )
+          if (canDelete.length === 0) break
+
+          const chanRows = await q<{ cid: string }>(
+            'MATCH (m:Message {id: $mid})-[:IN_CHANNEL]->(c:Channel) RETURN c.id AS cid',
+            { mid: messageId },
+          )
+
+          await qw('MATCH (m:Message {id: $mid}) DETACH DELETE m', { mid: messageId })
+
+          if (chanRows.length > 0) {
+            const rp = { type: 'message:deleted', messageId }
+            send(socket, rp)
+            broadcast(chanRows[0].cid, rp, uid)
+          }
+          break
+        }
 
         case 'react': {
           const { messageId, emoji } = event

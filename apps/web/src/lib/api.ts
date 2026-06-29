@@ -71,5 +71,21 @@ export const api = {
   messages: {
     react: (token: string, mid: string, emoji: string) =>
       req(`/messages/${mid}/react`, { method: 'POST', token, body: JSON.stringify({ emoji }) }),
+    edit: (token: string, mid: string, content: string, encryptedContent?: string) =>
+      req(`/messages/${mid}`, { method: 'PUT', token, body: JSON.stringify({ content, encryptedContent }) }),
+    delete: (token: string, mid: string) =>
+      req(`/messages/${mid}`, { method: 'DELETE', token }),
+    getReplies: (token: string, mid: string) =>
+      req<Record<string, unknown>[]>(`/messages/${mid}/replies`, { token }),
+    createReply: (token: string, mid: string, content: string, encryptedContent?: string) =>
+      req(`/messages/${mid}/replies`, { method: 'POST', token, body: JSON.stringify({ content, encryptedContent }) }),
+  },
+  dms: {
+    list: (token: string) =>
+      req<Record<string, unknown>[]>('/dms', { token }),
+    create: (token: string, recipientId: string) =>
+      req<{ id: string }>('/dms', { method: 'POST', token, body: JSON.stringify({ recipientId }) }),
+    get: (token: string, recipientId: string) =>
+      req<{ id: string; recipientUsername: string }>(`/dms/${recipientId}`, { token }),
   },
 }

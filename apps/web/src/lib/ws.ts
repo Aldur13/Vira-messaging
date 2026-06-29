@@ -86,6 +86,14 @@ class ViraWsClient {
     this._send({ type: 'react', messageId, emoji })
   }
 
+  editMessage(messageId: string, content: string, encryptedContent?: string) {
+    this._send({ type: 'message:edit', messageId, content, encryptedContent })
+  }
+
+  deleteMessage(messageId: string) {
+    this._send({ type: 'message:delete', messageId })
+  }
+
   screenShareOffer(to: string, sdp: string)  { this._send({ type: 'screenshare:offer',  to, sdp }) }
   screenShareAnswer(to: string, sdp: string) { this._send({ type: 'screenshare:answer', to, sdp }) }
   iceCandidate(to: string, candidate: RTCIceCandidateInit) { this._send({ type: 'screenshare:ice', to, candidate }) }

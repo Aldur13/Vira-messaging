@@ -26,28 +26,28 @@ export default function ChatHeader() {
 
   return (
     <>
-      <div className="h-12 flex items-center gap-3 px-4 border-b border-white/6 flex-shrink-0"
-           style={{ background: 'var(--color-abyss)' }}>
+      <div className="h-12 flex items-center gap-3 px-4 border-b border-white/10 backdrop-blur-xl flex-shrink-0"
+           style={{ background: 'rgba(255, 255, 255, 0.03)' }}>
 
         {/* Channel name */}
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
-               style={{ background: 'rgba(6,214,160,0.12)' }}>
-            <Hash size={12} strokeWidth={2.5} className="text-brand" />
+               style={{ background: 'rgba(59, 130, 246, 0.15)' }}>
+            <Hash size={12} strokeWidth={2.5} className="text-blue-300" />
           </div>
-          <span className="text-sm font-700 text-ink-100 truncate">{ch.name}</span>
+          <span className="text-sm font-700 text-white truncate">{ch.name}</span>
           {ch.description && (
             <>
               <span className="w-px h-3.5 bg-white/10 flex-shrink-0" />
-              <span className="text-[12px] font-400 text-ink-400 truncate hidden lg:block">{ch.description}</span>
+              <span className="text-[12px] font-400 text-white/60 truncate hidden lg:block">{ch.description}</span>
             </>
           )}
         </div>
 
         {/* Right actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          <div className="hidden sm:flex items-center gap-1 text-[10px] font-600 text-brand rounded-full px-2 py-1 mr-2"
-               style={{ background: 'rgba(6,214,160,0.1)', border: '1px solid rgba(6,214,160,0.15)' }}>
+          <div className="hidden sm:flex items-center gap-1 text-[10px] font-600 text-blue-300 rounded-full px-2 py-1 mr-2"
+               style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
             <Lock size={9} strokeWidth={3} />
             Encrypted
           </div>
@@ -59,8 +59,8 @@ export default function ChatHeader() {
                 className={clsx(
                   'w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer',
                   rightPanel === id
-                    ? 'text-brand bg-brand/10'
-                    : 'text-ink-400 hover:text-ink-100 hover:bg-raised',
+                    ? 'text-blue-300 bg-blue-400/20'
+                    : 'text-white/50 hover:text-white hover:bg-white/10',
                 )}
               >
                 <Icon size={15} strokeWidth={1.8} />
@@ -73,7 +73,7 @@ export default function ChatHeader() {
           <button
             onClick={() => setShowInvite(true)}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-700 transition-all cursor-pointer"
-            style={{ background: 'rgba(6,214,160,0.12)', color: '#06d6a0', border: '1px solid rgba(6,214,160,0.2)' }}
+            style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)' }}
           >
             <UserPlus size={12} strokeWidth={2} />
             <span className="hidden sm:inline">Invite</span>

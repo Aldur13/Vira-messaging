@@ -4,27 +4,35 @@
 @theme {
   --font-sans: 'Plus Jakarta Sans', sans-serif;
 
-  /* ── Vira surface scale (deep navy, not Discord gray) ── */
-  --color-void:    #060b14;
-  --color-abyss:   #0b1120;
-  --color-deep:    #0f1728;
-  --color-surface: #141f33;
-  --color-raised:  #1a273d;
-  --color-lift:    #1f2e47;
+  /* ── Modern gradient-based color scheme ── */
+  --color-void:    #f8fafc;
+  --color-abyss:   #f1f5f9;
+  --color-deep:    #e8eef7;
+  --color-surface: #ffffff;
+  --color-raised:  #f8fafc;
+  --color-lift:    #eff2f5;
 
-  /* ── Brand: teal — completely unlike Discord's blurple ── */
-  --color-brand:   #06d6a0;
-  --color-brand2:  #818cf8;
+  /* ── Primary gradient: Vibrant blue-to-purple ── */
+  --color-brand:   #3b82f6;
+  --color-brand2:  #8b5cf6;
 
   /* ── Status ── */
-  --color-online:  #4ade80;
-  --color-danger:  #f87171;
-  --color-warn:    #fbbf24;
+  --color-online:  #10b981;
+  --color-danger:  #ef4444;
+  --color-warn:    #f59e0b;
 
-  /* ── Text ── */
-  --color-ink-100: #dde3ef;
-  --color-ink-400: #7684a0;
-  --color-ink-600: #3a4560;
+  /* ── Text (dark for light background) ── */
+  --color-ink-100: #1e293b;
+  --color-ink-400: #64748b;
+  --color-ink-600: #94a3b8;
+
+  /* ── Additional modern colors ── */
+  --color-accent: #ec4899;
+  --color-teal:   #06b6d4;
+  --color-ghost:  #94a3b8;
+  --color-bright: #1e293b;
+  --color-high:   #cbd5e1;
+  --color-soft:   #475569;
 
   /* ── Font weights ── */
   --font-weight-400: 400;
@@ -72,3 +80,56 @@ body {
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 .modal-enter { animation: fadeIn 0.15s ease-out; }
+
+/* ── Futuristic Input Styling ── */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+textarea,
+select {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.05), 0 0 20px rgba(59, 130, 246, 0.1);
+}
+
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover,
+input[type="number"]:hover,
+input[type="search"]:hover,
+textarea:hover,
+select:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.05) 100%);
+  box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.08), 0 0 25px rgba(59, 130, 246, 0.15);
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.5);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.08) 100%);
+  box-shadow: inset 0 2px 8px rgba(255, 255, 255, 0.1), 0 0 30px rgba(59, 130, 246, 0.4), 0 0 60px rgba(139, 92, 246, 0.2);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+input:disabled,
+textarea:disabled,
+select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

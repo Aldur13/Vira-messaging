@@ -58,6 +58,123 @@ export async function messageRoutes(app: FastifyInstance) {
     },
   )
 
+  // Edit a message (author only)
+  app.put<{ Params: { id: string }; Body: { content: string; encryptedContent?: string } }>(
+    '/:id',
+    { onRequest: [authenticate] },
+    async (req, reply) => {
+      const { content, encryptedContent } = req.body
+      if (!content?.trim()) return reply.code(400).send({ error: 'content is required' })
+
+      const uid = userId(req)
+      const mid = req.params.id
+
+      const canEdit = await q(
+        'MATCH (u:User {id: $uid})-[:SENT]->(m:Message {id: $mid}) RETURN m.id',
+        { uid, mid },
+      )
+      if (canEdit.length === 0) return reply.code(403).send({ error: 'Cannot edit this message' })
+
+      const storedContent = encryptedContent ? '' : content.trim()
+      await qw(
+        `MATCH (m:Message {id: $mid})
+         SET m.content = $storedContent,
+             m.encryptedContent = $enc,
+             m.isEncrypted = $isEnc,
+             m.editedAt = datetime()`,
+        { mid, storedContent, enc: encryptedContent ?? null, isEnc: !!encryptedContent },
+      )
+
+      const updated = await q<{ content: string; encryptedContent?: string; editedAt: string }>(
+        'MATCH (m:Message {id: $mid}) RETURN m.content, m.encryptedContent, m.editedAt',
+        { mid },
+      )
+
+      return {
+        id: mid,
+        content: updated[0]?.content ?? content.trim(),
+        encryptedContent: updated[0]?.encryptedContent ?? null,
+        editedAt: updated[0]?.editedAt,
+      }
+    },
+  )
+
+  // Get thread replies for a message
+  app.get<{ Params: { id: string } }>(
+    '/:id/replies',
+    { onRequest: [authenticate] },
+    async (req) => {
+      const mid = req.params.id
+      const rows = await q<Record<string, unknown>>(
+        `MATCH (parent:Message {id: $mid})
+         MATCH (reply:Message)-[:REPLY_TO]->(parent)
+         MATCH (author:User)-[:SENT]->(reply)
+         RETURN reply.id, reply.channelId, reply.content, reply.encryptedContent,
+                reply.isEncrypted, reply.createdAt, reply.editedAt,
+                author.id, author.username, author.initials, author.color
+         ORDER BY reply.createdAt ASC`,
+        { mid },
+      )
+      return rows.map(r => ({
+        id: r['reply.id'],
+        channelId: r['reply.channelId'],
+        authorId: r['author.id'],
+        content: r['reply.content'],
+        encryptedContent: r['reply.encryptedContent'],
+        isEncrypted: r['reply.isEncrypted'],
+        timestamp: r['reply.createdAt'],
+        editedAt: r['reply.editedAt'],
+        author: {
+          id: r['author.id'],
+          username: r['author.username'],
+          initials: r['author.initials'],
+          color: r['author.color'],
+        },
+      }))
+    },
+  )
+
+  // Create a reply to a message (thread)
+  app.post<{ Params: { id: string }; Body: { content: string; encryptedContent?: string } }>(
+    '/:id/replies',
+    { onRequest: [authenticate] },
+    async (req, reply) => {
+      const { content, encryptedContent } = req.body
+      if (!content?.trim()) return reply.code(400).send({ error: 'content is required' })
+
+      const uid = userId(req)
+      const parentId = req.params.id
+
+      // Check if parent message exists and user has access
+      const parentRows = await q(
+        `MATCH (p:Message {id: $pid})-[:IN_CHANNEL]->(c:Channel)
+         MATCH (u:User {id: $uid})-[:MEMBER_OF]->(:Server)-[:HAS_CHANNEL]->(c)
+         RETURN p.channelId`,
+        { pid: parentId, uid },
+      )
+      if (parentRows.length === 0) return reply.code(403).send({ error: 'Cannot reply to this message' })
+
+      const channelId = parentRows[0]['p.channelId']
+      const replyId = uuid()
+      const storedContent = encryptedContent ? '' : content.trim()
+
+      await qw(
+        `MATCH (u:User {id: $uid}), (p:Message {id: $pid}), (c:Channel {id: $cid})
+         CREATE (m:Message {
+           id: $rid, content: $storedContent, encryptedContent: $enc,
+           isEncrypted: $isEnc, channelId: $cid, createdAt: datetime()
+         })
+         CREATE (u)-[:SENT]->(m)
+         CREATE (m)-[:REPLY_TO]->(p)
+         CREATE (m)-[:IN_CHANNEL]->(c)
+         SET p.replyCount = COALESCE(p.replyCount, 0) + 1`,
+        { uid, pid: parentId, rid: replyId, cid: channelId, storedContent, enc: encryptedContent ?? null, isEnc: !!encryptedContent },
+      )
+
+      return { id: replyId, parentMessageId: parentId }
+    },
+  )
+
   // Delete a message (author or server owner/mod)
   app.delete<{ Params: { id: string } }>(
     '/:id',

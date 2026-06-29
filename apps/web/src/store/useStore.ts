@@ -52,6 +52,7 @@ interface AppStore {
   messages: Message[]
   members: (ServerMember & { user: User })[]
   typingUsers: Record<string, TypingUser[]>
+  dmConversations: { id: string; recipientId: string; recipientUsername: string; lastMessageTime?: string }[]
 
   selectedServerId: string | null
   selectedChannelId: string | null
@@ -88,11 +89,25 @@ interface AppStore {
   createRoom:  (name: string, type: 'text' | 'voice') => Promise<void>
   joinSpace:   (id: string) => Promise<void>
 
+  // direct messages
+  listDMs: () => Promise<void>
+  startDM: (recipientId: string) => Promise<void>
+
   // messages
   sendMessage: (content: string) => Promise<void>
+  editMessage: (messageId: string, content: string) => Promise<void>
+  deleteMessage: (messageId: string) => Promise<void>
+  replyToMessage: (parentMessageId: string, content: string) => Promise<void>
+  openThread: (messageId: string) => Promise<void>
+  forwardMessage: (messageId: string, targetChannelId: string) => Promise<void>
 
   // reactions
   toggleReaction: (messageId: string, emoji: string) => void
+
+  // threads
+  threadMessages: Message[]
+  openThreadId: string | null
+  closeThread: () => void
 
   // voice / screen share
   joinVoiceChannel:  (channelId: string) => void
@@ -129,6 +144,24 @@ export const useStore = create<AppStore>((set, get) => {
         messages: s.messages.map(m =>
           m.id === messageId ? { ...m, reactions } : m,
         ),
+      }))
+    },
+  )
+
+  ws.on<{ type: string; messageId: string; content: string; encryptedContent: string | null; editedAt: string }>(
+    'message:edited', ({ messageId, content, encryptedContent, editedAt }) => {
+      set(s => ({
+        messages: s.messages.map(m =>
+          m.id === messageId ? { ...m, content, encryptedContent, editedAt, decryptedContent: undefined } : m,
+        ),
+      }))
+    },
+  )
+
+  ws.on<{ type: string; messageId: string }>(
+    'message:deleted', ({ messageId }) => {
+      set(s => ({
+        messages: s.messages.filter(m => m.id !== messageId),
       }))
     },
   )
@@ -249,6 +282,7 @@ export const useStore = create<AppStore>((set, get) => {
     messages: [],
     members: [],
     typingUsers: {},
+    dmConversations: [],
 
     selectedServerId: null,
     selectedChannelId: null,
@@ -256,6 +290,10 @@ export const useStore = create<AppStore>((set, get) => {
     isLoadingServers: false,
     isLoadingMessages: false,
     isLoading: false,
+
+    threadMessages: [],
+    openThreadId: null,
+    closeThread: () => set({ openThreadId: null, threadMessages: [] }),
 
     activeVoiceChannelId: null,
     isScreenSharing: false,
@@ -465,12 +503,115 @@ export const useStore = create<AppStore>((set, get) => {
       await get().selectServer(id)
     },
 
+    // ── direct messages ────────────────────────────────────────────────────
+
+    async listDMs() {
+      const { token } = get()
+      if (!token) return
+      try {
+        const rawDMs = await api.dms.list(token)
+        const dms = rawDMs.map(dm => ({
+          id: dm.id as string,
+          recipientId: dm.recipientId as string,
+          recipientUsername: dm.recipientUsername as string,
+          lastMessageTime: dm.lastMessageTime as string | undefined,
+        }))
+        set({ dmConversations: dms })
+      } catch { /* best effort */ }
+    },
+
+    async startDM(recipientId) {
+      const { token } = get()
+      if (!token) return
+      try {
+        const { id } = await api.dms.create(token, recipientId)
+        await get().listDMs()
+        await get().selectChannel(id)
+      } catch { /* best effort */ }
+    },
+
     // ── reactions ─────────────────────────────────────────────────────────────
 
     toggleReaction(messageId, emoji) {
       const { token } = get()
       if (!token) return
       ws.react(messageId, emoji)
+    },
+
+    async editMessage(messageId, content) {
+      const { token, selectedChannelId } = get()
+      if (!token || !selectedChannelId || !content.trim()) return
+
+      const msg = get().messages.find(m => m.id === messageId)
+      if (!msg) return
+
+      if (msg.isEncrypted) {
+        const channelKey = await loadChannelKey(token, selectedChannelId)
+        const encryptedContent = encryptMessage(content.trim(), channelKey)
+        ws.editMessage(messageId, content.trim(), encryptedContent)
+      } else {
+        ws.editMessage(messageId, content.trim())
+      }
+    },
+
+    async deleteMessage(messageId) {
+      ws.deleteMessage(messageId)
+    },
+
+    async replyToMessage(parentMessageId, content) {
+      const { token, selectedChannelId } = get()
+      if (!token || !selectedChannelId || !content.trim()) return
+
+      const msg = get().messages.find(m => m.id === parentMessageId)
+      if (!msg) return
+
+      if (msg.isEncrypted) {
+        const channelKey = await loadChannelKey(token, selectedChannelId)
+        const encryptedContent = encryptMessage(content.trim(), channelKey)
+        await api.messages.createReply(token, parentMessageId, content.trim(), encryptedContent)
+      } else {
+        await api.messages.createReply(token, parentMessageId, content.trim())
+      }
+
+      set(s => ({
+        messages: s.messages.map(m =>
+          m.id === parentMessageId ? { ...m, replyCount: (m.replyCount ?? 0) + 1 } : m,
+        ),
+      }))
+    },
+
+    async openThread(messageId) {
+      const { token } = get()
+      if (!token) return
+
+      try {
+        const replies = await api.messages.getReplies(token, messageId)
+        const channelKey = await loadChannelKey(token, get().selectedChannelId!)
+
+        const threadMsgs = replies.map(r => {
+          const msg = normMsg(r)
+          if (msg.isEncrypted && msg.encryptedContent) {
+            msg.decryptedContent = decryptMessage(msg.encryptedContent, channelKey)
+          }
+          return msg
+        })
+
+        set({ openThreadId: messageId, threadMessages: threadMsgs })
+      } catch { /* best effort */ }
+    },
+
+    async forwardMessage(messageId, targetChannelId) {
+      const { token, messages, selectedChannelId } = get()
+      if (!token || !selectedChannelId || messageId === targetChannelId) return
+
+      const msg = messages.find(m => m.id === messageId)
+      if (!msg) return
+
+      const content = `**Forwarded from ${msg.author?.username}:**\n${msg.decryptedContent || msg.content}`
+      const channelKey = await loadChannelKey(token, targetChannelId)
+      const encryptedContent = msg.isEncrypted ? encryptMessage(content, channelKey) : undefined
+
+      ws.sendMessage(targetChannelId, content, encryptedContent)
     },
 
     // ── voice / screen share ─────────────────────────────────────────────────
