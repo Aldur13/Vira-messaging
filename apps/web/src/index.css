@@ -4,31 +4,29 @@
 @theme {
   --font-sans: 'Plus Jakarta Sans', sans-serif;
 
-  /* ── Vira surface scale ── */
-  --color-deep:     #080b12;
-  --color-dark:     #0f1219;
-  --color-mid:      #141820;
-  --color-lift:     #1a2030;
-  --color-high:     #202638;
-  --color-card:     #171d2a;
+  /* ── Vira surface scale (deep navy, not Discord gray) ── */
+  --color-void:    #060b14;
+  --color-abyss:   #0b1120;
+  --color-deep:    #0f1728;
+  --color-surface: #141f33;
+  --color-raised:  #1a273d;
+  --color-lift:    #1f2e47;
 
-  /* ── Brand ── */
-  --color-accent:   #7c6ef5;
-  --color-teal:     #5eead4;
-  --color-glow:     rgba(124,110,245,0.35);
+  /* ── Brand: teal — completely unlike Discord's blurple ── */
+  --color-brand:   #06d6a0;
+  --color-brand2:  #818cf8;
 
   /* ── Status ── */
-  --color-online:   #4ade80;
-  --color-danger:   #f87171;
-  --color-warn:     #fbbf24;
+  --color-online:  #4ade80;
+  --color-danger:  #f87171;
+  --color-warn:    #fbbf24;
 
   /* ── Text ── */
-  --color-bright:   #eaecf4;
-  --color-soft:     #8a92ac;
-  --color-ghost:    #454e6a;
+  --color-ink-100: #dde3ef;
+  --color-ink-400: #7684a0;
+  --color-ink-600: #3a4560;
 
-  /* ── Font weights as utilities ── */
-  --font-weight-300: 300;
+  /* ── Font weights ── */
   --font-weight-400: 400;
   --font-weight-500: 500;
   --font-weight-600: 600;
@@ -37,56 +35,40 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html, body, #root {
-  height: 100%;
-  overflow: hidden;
-}
+html, body, #root { height: 100%; overflow: hidden; }
 
 body {
   font-family: var(--font-sans);
-  background: var(--color-deep);
-  color: var(--color-bright);
+  background: var(--color-void);
+  color: var(--color-ink-100);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--color-high); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: var(--color-ghost); }
+::-webkit-scrollbar-thumb { background: var(--color-raised); border-radius: 99px; }
 
-/* ── Skeleton shimmer ── */
 @keyframes shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--color-lift) 25%,
-    var(--color-high) 50%,
-    var(--color-lift) 75%
+  background: linear-gradient(90deg,
+    var(--color-surface) 25%, var(--color-raised) 50%, var(--color-surface) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.6s infinite;
   border-radius: 6px;
 }
 
-/* ── Glass panel ── */
-.glass {
-  background: rgba(15, 18, 25, 0.82);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-/* ── Hexagonal clip for server icons ── */
+/* Hexagonal clip for the Vira logo */
 .hex-clip {
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
 }
 
-/* ── Accent glow shadow ── */
-.glow-accent {
-  box-shadow: 0 0 20px var(--color-glow);
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.96) translateY(4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
+.modal-enter { animation: fadeIn 0.15s ease-out; }

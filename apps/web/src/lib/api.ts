@@ -49,12 +49,18 @@ export const api = {
   },
   servers: {
     list:     (token: string) => req<Record<string, unknown>[]>('/servers', { token }),
+    create:   (token: string, body: { name: string; initials?: string; color?: string }) =>
+      req<Record<string, unknown>>('/servers', { method: 'POST', token, body: JSON.stringify(body) }),
+    join:     (token: string, sid: string) =>
+      req<Record<string, unknown>>(`/servers/${sid}/join`, { method: 'POST', token }),
     channels: (token: string, sid: string) =>
       req<Record<string, unknown>[]>(`/servers/${sid}/channels`, { token }),
     members:  (token: string, sid: string) =>
       req<Record<string, unknown>[]>(`/servers/${sid}/members`, { token }),
   },
   channels: {
+    create: (token: string, serverId: string, body: { name: string; type: string; description?: string }) =>
+      req<Record<string, unknown>>(`/channels/server/${serverId}`, { method: 'POST', token, body: JSON.stringify(body) }),
     messages: (token: string, cid: string, before?: string) => {
       const qs = before ? `?before=${encodeURIComponent(before)}` : ''
       return req<Record<string, unknown>[]>(`/channels/${cid}/messages${qs}`, { token })
