@@ -1,6 +1,9 @@
 {
   "name": "vira",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "workspaces": ["apps/*"],
   "scripts": {
     "dev":   "npm run dev   --workspace=apps/web",
