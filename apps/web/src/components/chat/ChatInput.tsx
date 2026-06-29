@@ -39,9 +39,9 @@ export default function ChatInput() {
   return (
     <div className="px-4 pb-4 pt-2 flex-shrink-0">
       <div className={clsx(
-        'flex items-center gap-1.5 rounded-2xl border transition-all duration-200 px-3',
-        'bg-card border-white/8',
-        value ? 'border-accent/30 shadow-lg shadow-accent/5' : 'hover:border-white/12',
+        'flex items-center gap-1.5 rounded-2xl backdrop-blur-xl transition-all duration-300 px-3 py-1.5',
+        'bg-white/5 border border-white/10 hover:border-white/20',
+        value && 'border-blue-400/40 bg-white/8 shadow-lg shadow-blue-400/10',
       )}>
         <IconButton icon={Paperclip} label="Attach file" size={15} side="top" />
 
@@ -52,7 +52,7 @@ export default function ChatInput() {
           onKeyDown={onKeyDown}
           disabled={isSending}
           placeholder={ch ? `Message #${ch.name}` : 'Select a channel…'}
-          className="flex-1 bg-transparent border-none outline-none text-[13.5px] font-400 text-bright placeholder:text-ghost py-3.5 caret-accent disabled:opacity-50"
+          className="flex-1 bg-transparent border-none outline-none text-[13.5px] font-400 text-bright placeholder:text-white/35 py-3.5 caret-accent disabled:opacity-50"
           style={{ fontFamily: 'var(--font-sans)' }}
         />
 
@@ -61,13 +61,12 @@ export default function ChatInput() {
           <IconButton icon={ImageIcon} label="GIF"      size={15} side="top" />
           <IconButton icon={Sticker}   label="Stickers" size={15} side="top" />
 
-          {/* Send button — visible only when there is text */}
           {value.trim() && (
             <button
               onClick={submit}
               disabled={isSending}
               className="w-8 h-8 rounded-xl flex items-center justify-center ml-1 transition-all duration-150 cursor-pointer disabled:opacity-50 text-white hover:scale-105 active:scale-95"
-              style={{ background: 'linear-gradient(135deg,#7c6ef5,#5eead4)' }}
+              style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)', boxShadow: '0 0 15px rgba(59,130,246,0.4)' }}
             >
               <SendHorizonal size={14} strokeWidth={2} />
             </button>

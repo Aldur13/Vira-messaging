@@ -1,7 +1,14 @@
 export type Status    = 'online' | 'idle' | 'dnd' | 'offline'
-export type ChannelType = 'text' | 'voice' | 'stage' | 'media'
+export type ChannelType = 'text' | 'voice' | 'stage' | 'media' | 'direct'
 export type MemberRole  = 'owner' | 'admin' | 'mod' | 'member'
 export type BadgeType   = 'booster' | 'new' | 'admin'
+
+export interface DMConversation {
+  id: string
+  recipientId: string
+  recipientUsername: string
+  lastMessageTime?: string
+}
 
 export interface User {
   id: string
@@ -54,6 +61,9 @@ export interface Message {
   authorId: string
   content: string
   timestamp: string
+  editedAt?: string
+  parentMessageId?: string
+  replyCount?: number
   reactions?: MessageReaction[]
   isSystem?: boolean
   isEncrypted?: boolean

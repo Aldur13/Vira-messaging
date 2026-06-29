@@ -11,6 +11,8 @@ import { authRoutes }    from './routes/auth.js'
 import { serverRoutes }  from './routes/servers.js'
 import { channelRoutes } from './routes/channels.js'
 import { messageRoutes } from './routes/messages.js'
+import { dmRoutes }      from './routes/dms.js'
+import { previewRoutes } from './routes/preview.js'
 import { keyRoutes }     from './routes/keys.js'
 import { setupWebSocket } from './ws/gateway.js'
 import { verifyConnection } from './db/neo4j.js'
@@ -60,6 +62,8 @@ await app.register(keyRoutes,     { prefix: '/auth' })
 await app.register(serverRoutes,  { prefix: '/servers' })
 await app.register(channelRoutes, { prefix: '/channels' })
 await app.register(messageRoutes, { prefix: '/messages' })
+await app.register(dmRoutes,      { prefix: '/dms' })
+await app.register(previewRoutes, { prefix: '/api/preview' })
 await app.register(setupWebSocket)
 
 app.get('/health', async () => ({
@@ -80,7 +84,7 @@ if (serveFrontend) {
   })
 
   // SPA fallback — any unknown route returns index.html
-  const apiPrefixes = ['/auth', '/servers', '/channels', '/messages', '/health', '/ws']
+  const apiPrefixes = ['/auth', '/servers', '/channels', '/messages', '/dms', '/api', '/health', '/ws']
   app.setNotFoundHandler((req, reply) => {
     const isApi = apiPrefixes.some(p => req.url.startsWith(p))
     if (isApi) {
